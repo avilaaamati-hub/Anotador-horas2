@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Anotador de Horas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#111">
+
+<style>
+body{font-family:Arial;background:#111;color:#fff;padding:15px}
+h2{text-align:center}
+button{padding:12px;width:100%;font-size:18px;margin-top:10px}
+.day{border:1px solid #444;padding:8px;margin:5px 0}
+.active{background:#0a7}
+</style>
+</head>
+<body>
+
+<h2 id="mesTitulo"></h2>
+
+<div id="calendario"></div>
+
+<button id="btn">INICIAR</button>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
+const hoy = new Date();
+const año = hoy.getFullYear();
+const mes = hoy.getMonth();
+
+const meses = [
+  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+];
+
+document.getElementById("mesTitulo").innerText =
+  meses[mes] + " " + año;
+
+const diasMes = new Date(año, mes + 1, 0).getDate();
+const cal = document.getElementById("calendario");
+
+let datos = JSON.parse(localStorage.getItem("horas")) || {};
+let inicio = localStorage.getItem("inicio");
+
+for (let d = 1; d <= diasMes; d++) {
+  const div = document.createElement("div");
+  div.className = "day";
+  div.id = "d" + d;
+  div.innerText = d + " → " + (datos[d] || 0) + " hs";
+  cal.appendChild(div);
+}
+
+function actualizarActivo() {
+  document.querySelectorAll(".day").forEach(x => x.classList.remove("active"));
+  if (inicio) document.getElementById("d" + hoy.getDate()).classList.add("active");
+}
+actualizarActivo();
+
+document.getElementById("btn").onclick = () => {
+  if (!inicio) {
+    inicio = Date.now();
+    localStorage.setItem("inicio", inicio);
+    document.getElementById("btn").innerText = "FINALIZAR";
+  } else {
+    let horas = (Date.now() - inicio) / 3600000;
+    let red = Math.round(horas * 2) / 2;
+
+    const dia = hoy.getDate();
+    datos[dia] = (datos[dia] || 0) + red;
+    localStorage.setItem("horas", JSON.stringify(datos));
+
+    localStorage.removeItem("inicio");
+    inicio = null;
+
+    document.getElementById("d" + dia).innerText =
+      dia + " → " + datos[dia] + " hs";
+
+    document.getElementById("btn").innerText = "INICIAR";
+  }
+  actualizarActivo();
+};
+</script>
+
+</body>
+  </html>
